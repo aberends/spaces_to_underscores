@@ -1,0 +1,101 @@
+CONVERT_SPACES_TO_UNDERSCORES_IN_FILENAMES
+
+
+OBJECTIVE
+
+To provide textual information about the spaces to
+underscore conversion presented in a Youtube video.
+
+
+AUTHOR
+
+Allard Berends (AB)
+
+
+HISTORY
+
+Date with 'LC_TIME=en_US date +"\%d-\%b-\%Y \%H:\%M", '.
+30-Nov-2018 17:43, AB, start
+
+
+REFERENCES
+
+[find_utils]      Finding files,
+                  https://www.gnu.org/software/findutils/manual/html_mono/find.html
+
+[s2u_git_repo]    Finding files,
+                  https://github.com/aberends/spaces_to_underscores.git
+
+
+ABBREVIATIONS
+
+TBS               To Be Signed
+GNU               Gnu is Not Unix
+
+
+TERMS
+
+GNU               GNU is a repetitive acronym. Meaning, one
+                  can expand it again and again. So, one gets:
+                  Gnu is Not Unix is Not Unix ...
+
+
+SECTIONS
+
+Create with:
+- delete current entries
+- save file
+- exter "ex" mode by typing ':'
+- r !sed -n 's/^\([A-Z0-9][A-Z_0-9]*\)$/- \1/p' %:p
+
+
+
+SYSTEM_INFORMATION
+
+The practical examples in the video were executed on a
+CentOS machine:
+
+$ cat /etc/redhat-release
+CentOS Linux release 7.5.1804 (Core)
+
+Since the functionality depends on GNU software, like bash,
+[find_utils], sed and the coreutils, the commands run
+on other Linux distributions in a similar way.
+
+
+DOWNLOAD_SCRIPT
+
+From the github.com webinterface you can download a zip file
+of the repository that includes the
+mk_dirtree_with_spaces.sh script. The clickpath is:
+
+- https://github.com/aberends/spaces_to_underscores
+- Left mouse button click on "Clone or Download"
+- Left mouse button click on "Download ZIP"
+- Now save the file (exactly how depends on the browser)
+
+Firefox saves the zip-file in ~/Downloads. So we unpack it
+there:
+
+$ cd ~/Downloads
+$ unzip spaces_to_underscores-master.zip
+$ cd spaces_to_underscores-master
+$ ls 
+
+To be able to download the mk_dirtree_with_spaces.sh script,
+one needs to have the git command. On CentOS we install it
+with:
+
+# yum -y install git
+
+In order to use the tree command, we need:
+
+# yum -y install tree
+
+Now, under a normal (i.e. non-root) user, we clone the git
+repository with:
+
+$ git clone https://github.com/aberends/spaces_to_underscores.git
+$ cd spaces_to_underscores
+$ ./mk_dirtree_with_spaces.sh
+$ tree top
