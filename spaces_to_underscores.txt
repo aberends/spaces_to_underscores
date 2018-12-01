@@ -23,17 +23,27 @@ REFERENCES
 [find_utils]      Finding files,
                   https://www.gnu.org/software/findutils/manual/html_mono/find.html
 
-[s2u_git_repo]    Finding files,
+[s2u_git_repo]    aberends/spaces_to_underscores: Convert
+                  spaces to underscores in Linux filenames,
                   https://github.com/aberends/spaces_to_underscores.git
 
+[ytb_sp_to_un]    Convert spaces to underscores in Linux
+                  files, https://youtu.be/a9Uo6kBdCMA
 
 ABBREVIATIONS
 
-TBS               To Be Signed
+BASH              Bourne Again SHell
 GNU               Gnu is Not Unix
 
 
 TERMS
+
+BASH              The original Unix shell is called sh and
+                  was originally developed by a mister
+                  Bourne. The people at GNU remade the sh
+                  and called it born again shell. But as a
+                  reference to its original author, the word
+                  born is spelled as bourne.
 
 GNU               GNU is a repetitive acronym. Meaning, one
                   can expand it again and again. So, one gets:
@@ -48,6 +58,20 @@ Create with:
 - exter "ex" mode by typing ':'
 - r !sed -n 's/^\([A-Z0-9][A-Z_0-9]*\)$/- \1/p' %:p
 
+- CONVERT_SPACES_TO_UNDERSCORES_IN_FILENAMES
+- OBJECTIVE
+- AUTHOR
+- HISTORY
+- REFERENCES
+- ABBREVIATIONS
+- TERMS
+- SECTIONS
+- SYSTEM_INFORMATION
+- DOWNLOAD_SCRIPT
+- USE_THE_SCRIPT_AND_PIPELINE
+- WHY_MV_T_OPTION
+- PIPELINE_GOES_WRONG
+- PIPELINE_PIECES_EXPLAINED
 
 
 SYSTEM_INFORMATION
@@ -74,17 +98,20 @@ mk_dirtree_with_spaces.sh script. The clickpath is:
 - Left mouse button click on "Download ZIP"
 - Now save the file (exactly how depends on the browser)
 
-Firefox saves the zip-file in ~/Downloads. So we unpack it
+Firefox saves the ZIP file in ~/Downloads. So we unpack it
 there:
 
 $ cd ~/Downloads
 $ unzip spaces_to_underscores-master.zip
 $ cd spaces_to_underscores-master
-$ ls 
+$ ls mk_dirtree_with_spaces.sh 
+mk_dirtree_with_spaces.sh
 
-To be able to download the mk_dirtree_with_spaces.sh script,
-one needs to have the git command. On CentOS we install it
-with:
+A second way to download the script is to use the git
+command to clone the repository. Consequently, one needs to
+have the git command installed. On the CentOS 7 machine we
+use, installation of the git command is done with (# is root
+prompt):
 
 # yum -y install git
 
@@ -92,10 +119,307 @@ In order to use the tree command, we need:
 
 # yum -y install tree
 
-Now, under a normal (i.e. non-root) user, we clone the git
-repository with:
+Now, under a normal (i.e. non-root, hence $ as prompt) user,
+we clone the git repository with:
 
 $ git clone https://github.com/aberends/spaces_to_underscores.git
 $ cd spaces_to_underscores
+$ ls mk_dirtree_with_spaces.sh
+mk_dirtree_with_spaces.sh
+
+
+USE_THE_SCRIPT_AND_PIPELINE
+
+At this point we have the script at our disposal. Let's
+create the directory tree with the filenames containing
+spaces:
+
 $ ./mk_dirtree_with_spaces.sh
-$ tree top
+$ cd top
+$ tree --noreport --charset=ascii
+.
+`-- dir\ with\ spaces
+    |-- dir1\ space
+    |-- dir2\ space
+    |-- file1\ with\ spaces
+    `-- file2\ with\ spaces
+
+Next we run the command pipeline as presented in
+[ytb_sp_to_un]:
+
+$ find -depth -name '* *' | while read line; do bn=$(basename "$line"); dn=$(dirname "$line"); cbn=$(echo $bn | sed 's/ /_/g'); mv -T "$dn/$bn" "$dn/$cbn"; done
+
+We inspect the result with:
+
+$ tree --noreport --charset=ascii .
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+
+WHY_MV_T_OPTION
+
+A demonstration of the -T option makes things clear:
+
+$ mkdir empty
+$ cd empty
+$ mkdir a
+$ ls
+a
+
+Now we want to rename the directory a to b. We use the mv
+command:
+
+$ mv a b
+$ ls
+b
+
+So far so good. But what happens if the b directory already
+existed?
+
+$ mkdir a
+$ ls
+a  b
+$ mv a b
+$ ls
+b
+
+The result looks good. But use the tree command:
+
+$ tree --charset=ascii --noreport
+.
+`-- b
+    `-- a
+
+It turns out that the directory a has been moved into
+directory b. So, if the directory b already exists, a is not
+renamed to b, but moved into b.
+
+Especially in scripts this can lead to unexpected results.
+So, how can we make this safer? How can we make sure that
+the mv command behaves as a rename command for directories?
+
+$ cd ..
+$ rm -rf empty
+$ mkdir empty
+$ cd empty
+$ mkdir a b
+$ ls
+a  b
+$ mv -T a b
+$ ls
+b
+$ tree --charset=ascii --noreport
+.
+`-- b
+
+So, clearly when we use the -T option the mv command behaves
+as a rename command. But what happens if the b directory,
+the target, has content. For example b contains a file:
+
+$ mkdir a
+$ touch b/file
+$ mv -T a b
+mv: cannot move 'a' to 'b': File exists
+
+So, with the -T option the mv command refuses the rename
+action if this leads to data loss. In this case the file
+b/file would be lost.
+
+Hence, in our command pipeline we use the -T option of mv.
+
+
+PIPELINE_GOES_WRONG
+
+In this section we demonstrate what happens if we don't use
+the -T option of the mv command and we do the conversion
+exercise twice:
+
+$ ./mk_dirtree_with_spaces.sh
+$ cd top
+$ tree --charset=ascii --noreport
+.
+`-- dir\ with\ spaces
+    |-- dir1\ space
+    |-- dir2\ space
+    |-- file1\ with\ spaces
+    `-- file2\ with\ spaces
+
+$ find -depth -name '* *' | while read line; do bn=$(basename "$line"); dn=$(dirname "$line"); cbn=$(echo $bn | sed 's/ /_/g'); mv "$dn/$bn" "$dn/$cbn"; done
+
+$ tree --charset=ascii --noreport.
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+$ cd ..
+$ ./mk_dirtree_with_spaces.sh
+mkdir: cannot create directory ‘top’: File exists
+
+$ cd top
+$ tree --charset=ascii --noreport
+.
+|-- dir\ with\ spaces
+|   |-- dir1\ space
+|   |-- dir2\ space
+|   |-- file1\ with\ spaces
+|   `-- file2\ with\ spaces
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+We run the pipeline command again to try to rename the
+directories to their variants with underscores instead of
+spaces:
+
+$ find -depth -name '* *' | while read line; do bn=$(basename "$line"); dn=$(dirname "$line"); cbn=$(echo $bn | sed 's/ /_/g'); mv "$dn/$bn" "$dn/$cbn"; done
+$ tree --charset=ascii --noreport.
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- dir\ with\ spaces
+    |   |-- dir1_space
+    |   |-- dir2_space
+    |   |-- file1_with_spaces
+    |   `-- file2_with_spaces
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+Now we end up with a mess. Let's redo the exercise, but now
+always use the -T option of mv. We only show the results:
+
+$ tree --charset=ascii --noreport
+.
+`-- dir\ with\ spaces
+    |-- dir1\ space
+    |-- dir2\ space
+    |-- file1\ with\ spaces
+    `-- file2\ with\ spaces
+$ find -depth -name '* *' | while read line; do bn=$(basename "$line"); dn=$(dirname "$line"); cbn=$(echo $bn | sed 's/ /_/g'); mv -T "$dn/$bn" "$dn/$cbn"; done
+$ tree --charset=ascii --noreport
+.
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+$ cd ..
+$ ./mk_dirtree_with_spaces.sh
+mkdir: cannot create directory ‘top’: File exists
+$ cd top
+$ tree --charset=ascii --noreport
+.
+|-- dir\ with\ spaces
+|   |-- dir1\ space
+|   |-- dir2\ space
+|   |-- file1\ with\ spaces
+|   `-- file2\ with\ spaces
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+$ find -depth -name '* *' | while read line; do bn=$(basename "$line"); dn=$(dirname "$line"); cbn=$(echo $bn | sed 's/ /_/g'); mv -T "$dn/$bn" "$dn/$cbn"; done
+mv: cannot move './dir with spaces' to './dir_with_spaces': File exists
+
+$ tree --charset=ascii --noreport.
+|-- dir\ with\ spaces
+|   |-- dir1_space
+|   |-- dir2_space
+|   |-- file1_with_spaces
+|   `-- file2_with_spaces
+`-- dir_with_spaces
+    |-- dir1_space
+    |-- dir2_space
+    |-- file1_with_spaces
+    `-- file2_with_spaces
+
+Still we have a mess, but it is a little less messy. The
+tree structure has not changed and we did not loose any
+data.
+
+As a result, using the -T option in mv is safer. The return
+code given by the command in "$?" can be checked in scripts.
+
+
+PIPELINE_PIECES_EXPLAINED
+
+When we paste the pieces of the pipeline command in the
+terminal, it looks like this:
+
+$ find -depth -name '* *' | while read line
+> do
+> bn=$(basename "$line")
+> dn=$(dirname "$line")
+> cbn=$(echo $bn | sed 's/ /_/g')
+> mv -T "$dn/$bn" "$dn/$cbn"
+> done
+
+The first question is: why do we need the -depth option of
+find? Well, if we don't, we get:
+
+$ find -name '* *'
+./dir with spaces
+./dir with spaces/dir1 space
+./dir with spaces/dir2 space
+./dir with spaces/file1 with spaces
+./dir with spaces/file2 with spaces
+
+So, if we operate on the first path, we do:
+
+$ mv "./dir with spaces" "./dir_with_spaces"
+
+This works. The operation of the second path yields:
+
+$ mv "./dir with spaces/dir1 space" "./dir_with_spaces/dir1_space"
+
+This results in an error since the "./dir with spaces" does
+not exist any longer. As a result our method of renaming and
+keeping track of which parts of a path are already converted
+to parts with underscores, becomes much harder.
+
+Using the -depth option of find guarantees that we can
+operate from the deepest parts of the tree to the shallow
+parts. Hence moving a higher level directory is always done
+after moving its deeper levels to the underscore variants.
+Thus avoiding moving a higher level directory that does no
+longer exist.
+
+The basename(1) command gives us the last part of a path, so
+the relative name. For example, basename /a/b/c/d gives d.
+On the other hand the dirname(1) command gives us the path
+except the last part. For example, dirname /a/b/c/d gives
+/a/b/c. So $(dirname /a/b/c/d)/$(basename /a/b/c/d) ==
+/a/b/c/d.
+
+One can also use:
+$ a=a/b/c/d
+$ echo $a
+a/b/c/d
+$ echo ${a##*/}     # Instead of basename
+d
+$ echo ${a%/*}      # Instead of dirname
+a/b/c
+
+See for explanation of ${parameter##word} and
+${parameter%word} section "Parameter Expansion" of bash(1).
+
+Since dirname and basename are commands specifically made
+for operating on paths, we choose to use them over the
+parameter expansion methods. Probably dirname and basename
+are more robust to use (I have no proof for that).
+
+The sed command uses the "g" option, which means global. It
+tells sed to make the given substitution for all occurences
+of the given search pattern. Since a part of a filename can
+contain more than one space we need to use this option. We
+want to make sure that all spaces are converted to
+underscores.
